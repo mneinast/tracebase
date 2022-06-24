@@ -83,19 +83,6 @@ class PeakDataFormat(Format):
                     # searchable unique field for handoff
                     "type": "number",
                 },
-                "labeled_element": {
-                    "displayname": "Labeled Element",
-                    "searchable": True,
-                    "displayed": True,
-                    "type": "enumeration",
-                    "choices": ElementLabel.LABELED_ELEMENT_CHOICES,
-                },
-                "labeled_count": {
-                    "displayname": "Labeled Count",
-                    "searchable": True,
-                    "displayed": True,
-                    "type": "number",
-                },
                 "raw_abundance": {
                     "displayname": "Raw Abundance",
                     "searchable": True,
@@ -122,6 +109,39 @@ class PeakDataFormat(Format):
                 },
                 "med_rt": {
                     "displayname": "Median RT",
+                    "searchable": True,
+                    "displayed": True,
+                    "type": "number",
+                },
+            },
+        },
+        "PeakDataLabel": {
+            "model": "PeakDataLabel",
+            "path": "labels",
+            "reverse_path": "peak_data",
+            "manytomany": {
+                "is": True,  # TODO: split_rows should be separated from "is" & "manytomany" or change "manytomany" to "manyrelated" and "is" to "manytomany"
+                "split_rows": True,
+            },
+            "fields": {
+                "id": {
+                    "displayname": "(Internal) Peak Data Label Index",
+                    "searchable": True,
+                    "displayed": False,  # Used in link
+                    # "handoff": "",
+                    # Using in link will expose the internal index field in the search form because there's no
+                    # searchable unique field for handoff
+                    "type": "number",
+                },
+                "element": {
+                    "displayname": "Labeled Element",
+                    "searchable": True,
+                    "displayed": True,
+                    "type": "enumeration",
+                    "choices": ElementLabel.LABELED_ELEMENT_CHOICES,
+                },
+                "count": {
+                    "displayname": "Labeled Count",
                     "searchable": True,
                     "displayed": True,
                     "type": "number",
