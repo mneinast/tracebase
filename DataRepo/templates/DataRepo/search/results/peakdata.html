@@ -310,7 +310,8 @@
 
                     <!-- Labeled Element:Count -->
                     <td>
-                        {{ pd.labeled_element }}:{{ pd.labeled_count }}
+                        {% define True as lblfirst %}
+                        {% for lbl in pd.labels.all %}{% if not lblfirst %}; {% endif%}{{ lbl.element }}:{{ lbl.count }}{% define False as lblfirst %}{% endfor %}
                     </td>
 
                     <!-- Peak Group Set Filename -->

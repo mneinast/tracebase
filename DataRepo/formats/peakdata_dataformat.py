@@ -120,9 +120,8 @@ class PeakDataFormat(Format):
             "path": "labels",
             "reverse_path": "peak_data",
             "manytomany": {
-                "is": True,  # TODO: split_rows should be separated from "is" & "manytomany"
-                # or change "manytomany" to "manyrelated" and "is" to "manytomany"
-                "split_rows": True,
+                "is": False,
+                "split_rows": False,
             },
             "fields": {
                 "id": {
