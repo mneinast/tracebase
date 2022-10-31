@@ -200,6 +200,7 @@ class SampleTableLoader:
                     study.description = description
                 print(f"Created new record: Study:{study}")
                 try:
+                    # TODO: See issue #580.  This will allow full_clean to be called regardless of the database.
                     if self.db == settings.DEFAULT_DB:
                         # full_clean does not have a using parameter. It only supports the default database
                         study.full_clean()
@@ -236,6 +237,9 @@ class SampleTableLoader:
                 animal, created = Animal.objects.using(self.db).get_or_create(
                     name=name, infusate=infusate
                 )
+                # TODO: See issue #580.  The following hits the default database's cache table even if the validation
+                #       database has been set in the animal object.  This is currently tolerable because the only
+                #       effect is a cache deletion.
                 if created and animal.caches_exist():
                     animals_to_uncache.append(animal)
                 elif created and settings.DEBUG:
@@ -362,20 +366,6 @@ class SampleTableLoader:
             # Sample
             sample_name = self.getRowVal(row, self.headers.SAMPLE_NAME)
             if sample_name is not None:
-                # try:
-                #     # Assuming that duplicates among the submission are handled in the checking of the file, so we must
-                #     # check against the tracebase database for pre-existing sample name duplicates
-                #     sample = Sample.objects.using(settings.TRACEBASE_DB).get(
-                #         name=sample_name
-                #     )
-                #     print(f"SKIPPING existing record: Sample:{sample_name}")
-                # except Sample.DoesNotExist:
-                #     # This loop encounters this code for the same sample multiple times, so during user data validation
-                #     # and when getting here because the sample doesn't exist in the tracebase-proper database, we still
-                #     # have to check the validation database before trying to create the sample so that we don't run
-                #     # afoul of the unique constraint
-                #     # In the case of actually just loading the tracebase database, this will result in a duplicate
-                #     # check & exception, but otherwise, it would result in dealing with duplicate code
                 try:
                     sample = Sample.objects.using(self.db).get(name=sample_name)
                     print(f"SKIPPING existing record: Sample:{sample_name}")
@@ -405,6 +395,7 @@ class SampleTableLoader:
                             sample_date = sample_date_value
                         sample.date = sample_date
                     try:
+                        # TODO: See issue #580.  This will allow full_clean to be called regardless of the database.
                         if self.db == settings.DEFAULT_DB:
                             # full_clean does not have a using parameter. It only supports the default database
                             sample.full_clean()
@@ -423,14 +414,7 @@ class SampleTableLoader:
                                 f"\tFinding or inserting FCirc tracer '{tracer.compound}' and label '{label.element}' "
                                 f"for '{sample}' in database {self.db}..."
                             )
-                            # from django.db.models.base import ModelState
-                            # ms = ModelState
-                            # setattr(ms, "db", self.db)
-                            print(f"current database: {self.db}\ninfusate from database: {infusate._state.db}\ntracer from database: {tracer._state.db}\nsample from database: {sample._state.db}\n_state type: {type(tracer._state)} db type: {type(tracer._state.db)}")
-                            using_obj = FCirc.objects.using(self.db)
-                            # setattr(using_obj, "_state", ms)
-                            # print(f"using_obj database: {using_obj._state.db}")
-                            using_obj.get_or_create(
+                            FCirc.objects.using(self.db).get_or_create(
                                 serum_sample=sample,
                                 tracer=tracer,
                                 element=label.element,

@@ -31,6 +31,7 @@ class TracerQuerySet(models.QuerySet):
                 TracerLabel.objects.using(self._db).create_tracer_label(
                     tracer, isotope_data
                 )
+            # TODO: See issue #580.  This will allow full_clean to be called regardless of the database.
             if self._db == settings.DEFAULT_DB:
                 tracer.full_clean()
             created = True

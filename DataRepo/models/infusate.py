@@ -11,6 +11,7 @@ from DataRepo.models.maintained_model import (
     are_autoupdates_enabled,
     maintained_field_function,
 )
+from DataRepo.models.multi_db_mixin import MultiDBMixin
 from DataRepo.models.utilities import get_model_by_name
 
 if TYPE_CHECKING:
@@ -59,6 +60,7 @@ class InfusateQuerySet(models.QuerySet):
                     tracer=tracer,
                     concentration=infusate_tracer["concentration"],
                 )
+            # TODO: See issue #580.  This will allow full_clean to be called regardless of the database.
             if self._db == settings.DEFAULT_DB:
                 infusate.full_clean()
             infusate.save(using=self._db)
@@ -93,7 +95,7 @@ class InfusateQuerySet(models.QuerySet):
         return matching_infusate
 
 
-class Infusate(MaintainedModel):
+class Infusate(MaintainedModel, MultiDBMixin):
     objects = InfusateQuerySet().as_manager()
 
     id = models.AutoField(primary_key=True)
@@ -281,10 +283,12 @@ class Infusate(MaintainedModel):
         """
         from DataRepo.models.tracer_label import TracerLabel
 
+        # TODO: See issue #580.  "using" will be unnecessary.
         db = self.get_using_db()
 
         return list(
-            TracerLabel.objects.using(db).filter(tracer__infusates__id=self.id)
+            TracerLabel.objects.using(db)
+            .filter(tracer__infusates__id=self.id)
             .order_by("element")
             .distinct("element")
             .values_list("element", flat=True)
