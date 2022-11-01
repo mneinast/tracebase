@@ -18,6 +18,7 @@ from DataRepo.utils.infusate_name_parser import TracerData
 class TracerQuerySet(models.QuerySet):
     def get_or_create_tracer(self, tracer_data: TracerData) -> tuple[Tracer, bool]:
         """Get Tracer matching the tracer_data, or create a new tracer"""
+        db = self._db or settings.DEFAULT_DB
         tracer = self.get_tracer(tracer_data)
         created = False
         if tracer is None:
@@ -26,19 +27,18 @@ class TracerQuerySet(models.QuerySet):
             compound = Compound.compound_matching_name_or_synonym(
                 tracer_data["compound_name"]
             )
-            tracer = self.using(self._db).create(compound=compound)
+            tracer = self.using(db).create(compound=compound)
             for isotope_data in tracer_data["isotopes"]:
-                TracerLabel.objects.using(self._db).create_tracer_label(
-                    tracer, isotope_data
-                )
+                TracerLabel.objects.using(db).create_tracer_label(tracer, isotope_data)
             # TODO: See issue #580.  This will allow full_clean to be called regardless of the database.
-            if self._db == settings.DEFAULT_DB:
+            if db == settings.DEFAULT_DB:
                 tracer.full_clean()
             created = True
         return (tracer, created)
 
     def get_tracer(self, tracer_data: TracerData) -> Optional[Tracer]:
         """Get Tracer matching the tracer_data"""
+        db = self._db or settings.DEFAULT_DB
         matching_tracer = None
 
         # First, check if the compound is found
@@ -49,7 +49,7 @@ class TracerQuerySet(models.QuerySet):
         if compound:
             # Check for tracers of the compound with same number of labels
             tracers = (
-                Tracer.objects.using(self._db)
+                Tracer.objects.using(db)
                 .annotate(num_labels=models.Count("labels"))
                 .filter(compound=compound, num_labels=len(tracer_data["isotopes"]))
             )

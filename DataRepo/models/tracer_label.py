@@ -15,7 +15,8 @@ from DataRepo.utils.infusate_name_parser import IsotopeData
 
 class TracerLabelQuerySet(models.QuerySet):
     def create_tracer_label(self, tracer: Tracer, isotope_data: IsotopeData):
-        tracer_label = self.using(self._db).create(
+        db = self._db or settings.DEFAULT_DB
+        tracer_label = self.using(db).create(
             tracer=tracer,
             element=isotope_data["element"],
             count=isotope_data["count"],
@@ -23,7 +24,7 @@ class TracerLabelQuerySet(models.QuerySet):
             mass_number=isotope_data["mass_number"],
         )
         # TODO: See issue #580.  This will allow full_clean to be called regardless of the database.
-        if self._db == settings.DEFAULT_DB:
+        if db == settings.DEFAULT_DB:
             tracer_label.full_clean()
         return tracer_label
 
