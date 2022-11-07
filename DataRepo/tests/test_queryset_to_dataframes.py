@@ -252,7 +252,6 @@ class QuerysetToPandasDataFrameBaseTests(TracebaseTestCase):
 
 
 @tag("qs2df")
-@tag("multi_working")
 class QuerysetToPandasDataFrameTests(QuerysetToPandasDataFrameBaseTests):
     @classmethod
     def setUpTestData(cls):
@@ -261,7 +260,6 @@ class QuerysetToPandasDataFrameTests(QuerysetToPandasDataFrameBaseTests):
         super().setUpTestData()
 
 
-@tag("multi_working")
 class QuerysetToPandasDataFrameNullToleranceTests(QuerysetToPandasDataFrameBaseTests):
     @classmethod
     def setUpTestData(cls):
