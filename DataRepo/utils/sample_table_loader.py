@@ -125,7 +125,7 @@ class SampleTableLoader:
         Gets a unique list of researchers from the file being loaded and ensures the researchers already exist in the
         database
         """
-        db_researchers = get_researchers()
+        db_researchers = get_researchers(database=self.db)
         if len(db_researchers) != 0:
             print("Checking researchers...")
             input_researchers = []
@@ -200,6 +200,7 @@ class SampleTableLoader:
                     study.description = description
                 print(f"Created new record: Study:{study}")
                 try:
+                    # TODO: See issue #580.  This will allow full_clean to be called regardless of the database.
                     if self.db == settings.TRACEBASE_DB:
                         # full_clean does not have a using parameter. It only supports the default database
                         study.full_clean()
@@ -236,6 +237,9 @@ class SampleTableLoader:
                 animal, created = Animal.objects.using(self.db).get_or_create(
                     name=name, infusate=infusate
                 )
+                # TODO: See issue #580.  The following hits the default database's cache table even if the validation
+                #       database has been set in the animal object.  This is currently tolerable because the only
+                #       effect is a cache deletion.
                 if created and animal.caches_exist():
                     animals_to_uncache.append(animal)
                 elif created and settings.DEBUG:
@@ -366,38 +370,48 @@ class SampleTableLoader:
                     sample = Sample.objects.using(self.db).get(name=sample_name)
                     print(f"SKIPPING existing record: Sample:{sample_name}")
                 except Sample.DoesNotExist:
-                    print(f"Creating new record: Sample:{sample_name}")
-                    researcher = self.getRowVal(row, self.headers.SAMPLE_RESEARCHER)
-                    tc = self.getRowVal(row, self.headers.TIME_COLLECTED)
-                    sample_args = {
-                        "name": sample_name,
-                        "animal": animal,
-                        "tissue": tissue,
-                    }
-                    if researcher is not None:
-                        sample_args["researcher"] = researcher
-                    if tc is not None:
-                        sample_args["time_collected"] = timedelta(minutes=float(tc))
-                    sample = Sample(**sample_args)
-                    sd = self.getRowVal(
-                        row, self.headers.SAMPLE_DATE, hdr_required=False
-                    )
-                    if sd is not None:
-                        sample_date_value = sd
-                        # Pandas may have already parsed the date
-                        try:
-                            sample_date = dateutil.parser.parse(sample_date_value)
-                        except TypeError:
-                            sample_date = sample_date_value
-                        sample.date = sample_date
+                    # This loop encounters this code for the same sample multiple times, so during user data validation
+                    # and when getting here because the sample doesn't exist in the tracebase-proper database, we still
+                    # have to check the validation database before trying to create the sample so that we don't run
+                    # afoul of the unique constraint
+                    # In the case of actually just loading the tracebase database, this will result in a duplicate
+                    # check & exception, but otherwise, it would result in dealing with duplicate code
                     try:
-                        if self.db == settings.TRACEBASE_DB:
-                            # full_clean does not have a using parameter. It only supports the default database
-                            sample.full_clean()
-                        sample.save(using=self.db)
-                    except Exception as e:
-                        print(f"Error saving record: Sample:{sample}")
-                        raise (e)
+                        sample = Sample.objects.using(self.db).get(name=sample_name)
+                        print(f"SKIPPING existing record: Sample:{sample_name}")
+                    except Sample.DoesNotExist:
+                        print(f"Creating new record: Sample:{sample_name}")
+                        researcher = self.getRowVal(row, self.headers.SAMPLE_RESEARCHER)
+                        tc = self.getRowVal(row, self.headers.TIME_COLLECTED)
+                        sample_args = {
+                            "name": sample_name,
+                            "animal": animal,
+                            "tissue": tissue,
+                        }
+                        if researcher is not None:
+                            sample_args["researcher"] = researcher
+                        if tc is not None:
+                            sample_args["time_collected"] = timedelta(minutes=float(tc))
+                        sample = Sample(**sample_args)
+                        sd = self.getRowVal(
+                            row, self.headers.SAMPLE_DATE, hdr_required=False
+                        )
+                        if sd is not None:
+                            sample_date_value = sd
+                            # Pandas may have already parsed the date
+                            try:
+                                sample_date = dateutil.parser.parse(sample_date_value)
+                            except TypeError:
+                                sample_date = sample_date_value
+                            sample.date = sample_date
+                        try:
+                            if self.db == settings.TRACEBASE_DB:
+                                # full_clean does not have a using parameter. It only supports the default database
+                                sample.full_clean()
+                            sample.save(using=self.db)
+                        except Exception as e:
+                            print(f"Error saving record: Sample:{sample}")
+                            raise (e)
 
                 # Infusate is required, but the missing headers are buffered to create an exception later
                 if tissue.is_serum() and infusate:
