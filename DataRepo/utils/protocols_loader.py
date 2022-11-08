@@ -83,6 +83,7 @@ class ProtocolsLoader:
                     if description is None:
                         description = ""
 
+                    # Try and get the protocol
                     protocol_rec, protocol_created = Protocol.objects.using(
                         db
                     ).get_or_create(name=name, category=category)
