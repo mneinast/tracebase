@@ -133,6 +133,7 @@ class FormatsTests(TracebaseTestCase):
 
     def getPdtemplateChoicesTuple(self):
         return (
+            ("peak_group__msrun__sample__animal__age", "Age"),
             ("peak_group__msrun__sample__animal__name", "Animal"),
             ("peak_group__msrun__sample__animal__body_weight", "Body Weight (g)"),
             ("corrected_abundance", "Corrected Abundance"),
@@ -369,6 +370,7 @@ class FormatsTests(TracebaseTestCase):
                     "selectedtemplate": fmt,
                 },
                 "Compound",
+                None,
             ],
             "compounds__synonyms",
             "peak_group_set",
@@ -544,7 +546,8 @@ class FormatsTests(TracebaseTestCase):
         fld = "fldtest"
         ncmp = "ncmptest"
         val = "valtest"
-        got = createFilterCondition(fld, ncmp, val)
+        units = "unitstest"
+        got = createFilterCondition(fld, ncmp, val, units)
         expected = {
             "type": "query",
             "pos": "",
@@ -552,6 +555,7 @@ class FormatsTests(TracebaseTestCase):
             "fld": fld,
             "ncmp": ncmp,
             "val": val,
+            "units": units,
         }
         self.assertEqual(expected, got)
 
@@ -559,8 +563,9 @@ class FormatsTests(TracebaseTestCase):
         fld = "fldtest"
         ncmp = "ncmptest"
         val = "valtest"
+        units = "unitstest"
         got = appendFilterToGroup(
-            createFilterGroup(), createFilterCondition(fld, ncmp, val)
+            createFilterGroup(), createFilterCondition(fld, ncmp, val, units)
         )
         expected = {
             "type": "group",
@@ -574,6 +579,7 @@ class FormatsTests(TracebaseTestCase):
                     "fld": fld,
                     "ncmp": ncmp,
                     "val": val,
+                    "units": units,
                 }
             ],
         }
@@ -615,6 +621,7 @@ class FormatsTests(TracebaseTestCase):
                     "ncmp": "",
                     "fld": "",
                     "val": "",
+                    "units": "",
                 }
             ],
         }
@@ -635,6 +642,7 @@ class FormatsTests(TracebaseTestCase):
                                 "ncmp": "iexact",
                                 "fld": "msrun__sample__animal__studies__name",
                                 "val": "obob_fasted",
+                                "units": "identity",
                             }
                         ],
                     },
@@ -658,7 +666,7 @@ class FormatsTests(TracebaseTestCase):
         fmt = "pgtemplate"
         newqry = basv_metadata.createNewBasicQuery(mdl, fld, cmp, val, fmt)
         self.maxDiff = None
-        self.assertEqual(newqry, qry)
+        self.assertEqual(qry, newqry)
 
     def test_searchFieldToDisplayField(self):
         """
@@ -698,6 +706,7 @@ class FormatsTests(TracebaseTestCase):
                                 "ncmp": "iexact",
                                 "static": "",
                                 "val": "Brain",
+                                "units": "",
                             }
                         ],
                     },
@@ -717,6 +726,7 @@ class FormatsTests(TracebaseTestCase):
                                 "static": "",
                                 "fld": "labeled_element",
                                 "val": "",
+                                "units": "",
                             }
                         ],
                     },
@@ -736,6 +746,7 @@ class FormatsTests(TracebaseTestCase):
                                 "ncmp": "iexact",
                                 "static": "",
                                 "val": "",
+                                "units": "",
                             }
                         ],
                     },
@@ -766,6 +777,7 @@ class FormatsTests(TracebaseTestCase):
                         "ncmp": "iexact",
                         "fld": "msrun__sample__animal__studies__name",
                         "val": "obob_fasted",
+                        "units": "identity",
                     },
                     {
                         "type": "query",
@@ -774,6 +786,7 @@ class FormatsTests(TracebaseTestCase):
                         "ncmp": "iexact",
                         "fld": "compounds__synonyms__name",
                         "val": "glucose",
+                        "units": "identity",
                     },
                 ],
             }
@@ -1245,14 +1258,16 @@ class SearchFieldChoicesTests(TracebaseTestCase):
         base_search_view = Format()
 
         all_ncmp_choices = (
-            ("iexact", "is"),
-            ("not_iexact", "is not"),
+            ("exact", "is"),
+            ("not_exact", "is not"),
             ("lt", "<"),
             ("lte", "<="),
             ("gt", ">"),
             ("gte", ">="),
             ("not_isnull", "has a value (ie. is not None)"),
             ("isnull", "does not have a value (ie. is None)"),
+            ("iexact", "is"),
+            ("not_iexact", "is not"),
             ("icontains", "contains"),
             ("not_icontains", "does not contain"),
             ("istartswith", "starts with"),
@@ -1260,4 +1275,4 @@ class SearchFieldChoicesTests(TracebaseTestCase):
             ("iendswith", "ends with"),
             ("not_iendswith", "does not end with"),
         )
-        self.assertEqual(base_search_view.getAllComparisonChoices(), all_ncmp_choices)
+        self.assertEqual(all_ncmp_choices, base_search_view.getAllComparisonChoices())

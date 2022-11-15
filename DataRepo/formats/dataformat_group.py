@@ -740,6 +740,9 @@ class FormatGroup:
         Constructs a new qry object for an advanced search from basic search input.
         """
 
+        # NOTE: This does not yet support units.  "identity" is the default.
+        units = "identity"
+
         qry = self.getRootGroup(fmt)
 
         try:
@@ -763,7 +766,7 @@ class FormatGroup:
         target_fld = sfields[fld]
         target_val = val
 
-        setFirstEmptyQuery(qry, fmt, target_fld, cmp, target_val)
+        setFirstEmptyQuery(qry, fmt, target_fld, cmp, target_val, units)
 
         dfld, dval = self.searchFieldToDisplayField(mdl, fld, val, qry)
 
@@ -774,7 +777,7 @@ class FormatGroup:
 
             # Re-create another empty copy of the qry
             qry = self.getRootGroup(fmt)
-            setFirstEmptyQuery(qry, fmt, target_fld, cmp, target_val)
+            setFirstEmptyQuery(qry, fmt, target_fld, cmp, target_val, units)
 
         return qry
 
