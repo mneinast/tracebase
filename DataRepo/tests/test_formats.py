@@ -238,9 +238,9 @@ class FormatsTests(TracebaseTestCase):
         self.assertIsNone(fld_units_lookup["serum_sample__animal__genotype"])
         # Each value should be a dict with the units, this one having 15 keys
         self.assertEqual(15, len(fld_units_lookup["serum_sample__animal__age"].keys()))
-        # This "native" unit type has 4 keys
+        # This "native" unit type has 5 keys: name, example, convert, pyconvert, and about
         self.assertEqual(
-            4, len(fld_units_lookup["serum_sample__animal__age"]["native"].keys())
+            5, len(fld_units_lookup["serum_sample__animal__age"]["native"].keys())
         )
         # Check the name (displayed in the units select list)
         self.assertEqual(
@@ -283,9 +283,9 @@ class FormatsTests(TracebaseTestCase):
         self.assertIsNone(fld_units_lookup["msrun__sample__animal__genotype"])
         # Each value should be a dict with the units, this one having 15 keys
         self.assertEqual(15, len(fld_units_lookup["msrun__sample__animal__age"].keys()))
-        # This "native" unit type has 4 keys
+        # This "native" unit type has 5 keys: name, example, convert, pyconvert, and about
         self.assertEqual(
-            4, len(fld_units_lookup["msrun__sample__animal__age"]["native"].keys())
+            5, len(fld_units_lookup["msrun__sample__animal__age"]["native"].keys())
         )
         # Check the name (displayed in the units select list)
         self.assertEqual(
