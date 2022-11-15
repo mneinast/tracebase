@@ -478,6 +478,10 @@ def getValue(filter):
     return filter["val"]
 
 
+def getUnits(filter):
+    return filter["units"]
+
+
 def getComparison(filter):
     return filter["ncmp"]
 
