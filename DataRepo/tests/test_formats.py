@@ -232,6 +232,96 @@ class FormatsTests(TracebaseTestCase):
             ("serum_sample__animal__treatment__name", "Treatment"),
         )
 
+    def assertIsAFcUnitsLookupDict(self, fld_units_lookup):
+        self.assertEqual(31, len(fld_units_lookup.keys()))
+        # Path should be prepended to the field name
+        self.assertIsNone(fld_units_lookup["serum_sample__animal__genotype"])
+        # Each value should be a dict with the units, this one having 15 keys
+        self.assertEqual(15, len(fld_units_lookup["serum_sample__animal__age"].keys()))
+        # This "native" unit type has 4 keys
+        self.assertEqual(
+            4, len(fld_units_lookup["serum_sample__animal__age"]["native"].keys())
+        )
+        # Check the name (displayed in the units select list)
+        self.assertEqual(
+            "n.n{units},...",
+            fld_units_lookup["serum_sample__animal__age"]["native"]["name"],
+        )
+        # Check the example (shown as a placeholder in the val field)
+        self.assertEqual(
+            "1w,1d,1:01:01.1",
+            fld_units_lookup["serum_sample__animal__age"]["native"]["example"],
+        )
+        # The convert key should be a function
+        self.assertEqual(
+            "function",
+            type(
+                fld_units_lookup["serum_sample__animal__age"]["native"]["convert"]
+            ).__name__,
+        )
+        # Check the about value
+        expected_about = (
+            "Values can be entered using the following format pattern: `[n{units}{:|,}]*hh:mm:ss[.f]`, where units "
+            "can be:\n\n- c[enturies]\n- decades\n- y[ears]\n- months\n- w[eeks]\n- d[ays]\n- h[ours]\n- m[inutes]\n"
+            "- s[econds]\n- milliseconds\n- microseconds\n\nIf milli/micro-seconds are not included, the last 3 units "
+            "(hours, minutes, and seconds) do not need to be specified.\n\nExamples:\n\n- 1w,1d,1:01:01.1\n- 1 year, "
+            "3 months\n- 2:30\n- 2 days, 11:29:59.999"
+        )
+        self.assertEqual(
+            expected_about,
+            fld_units_lookup["serum_sample__animal__age"]["native"]["about"],
+        )
+        # The convert function should modify the value to the format needed by the database
+        self.assertEqual(
+            "14w", fld_units_lookup["serum_sample__animal__age"]["weeks"]["convert"](14)
+        )
+
+    def assertIsAPgUnitsLookupDict(self, fld_units_lookup):
+        print(fld_units_lookup)
+        self.assertEqual(38, len(fld_units_lookup.keys()))
+        # Path should be prepended to the field name
+        self.assertIsNone(fld_units_lookup["msrun__sample__animal__genotype"])
+        # Each value should be a dict with the units, this one having 15 keys
+        self.assertEqual(15, len(fld_units_lookup["msrun__sample__animal__age"].keys()))
+        # This "native" unit type has 4 keys
+        self.assertEqual(
+            4, len(fld_units_lookup["msrun__sample__animal__age"]["native"].keys())
+        )
+        # Check the name (displayed in the units select list)
+        self.assertEqual(
+            "n.n{units},...",
+            fld_units_lookup["msrun__sample__animal__age"]["native"]["name"],
+        )
+        # Check the example (shown as a placeholder in the val field)
+        self.assertEqual(
+            "1w,1d,1:01:01.1",
+            fld_units_lookup["msrun__sample__animal__age"]["native"]["example"],
+        )
+        # The convert key should be a function
+        self.assertEqual(
+            "function",
+            type(
+                fld_units_lookup["msrun__sample__animal__age"]["native"]["convert"]
+            ).__name__,
+        )
+        # Check the about value
+        expected_about = (
+            "Values can be entered using the following format pattern: `[n{units}{:|,}]*hh:mm:ss[.f]`, where units "
+            "can be:\n\n- c[enturies]\n- decades\n- y[ears]\n- months\n- w[eeks]\n- d[ays]\n- h[ours]\n- m[inutes]\n"
+            "- s[econds]\n- milliseconds\n- microseconds\n\nIf milli/micro-seconds are not included, the last 3 units "
+            "(hours, minutes, and seconds) do not need to be specified.\n\nExamples:\n\n- 1w,1d,1:01:01.1\n- 1 year, "
+            "3 months\n- 2:30\n- 2 days, 11:29:59.999"
+        )
+        self.assertEqual(
+            expected_about,
+            fld_units_lookup["msrun__sample__animal__age"]["native"]["about"],
+        )
+        # The convert function should modify the value to the format needed by the database
+        self.assertEqual(
+            "14w",
+            fld_units_lookup["msrun__sample__animal__age"]["weeks"]["convert"](14),
+        )
+
     def test_getSearchFieldChoicesDict(self):
         basv = SearchGroup()
         sfcd = basv.getSearchFieldChoicesDict()
@@ -377,7 +467,12 @@ class FormatsTests(TracebaseTestCase):
             "labels",
         ]
 
-        self.assertEqual(expected_prefetches, prefetches)
+        self.assertEqual(8, len(prefetches))
+        self.assertEqual("list", type(prefetches).__name__)
+        self.assertEqual(expected_prefetches[0:4], prefetches[0:4])
+        self.assertEqual(expected_prefetches[5:3], prefetches[5:3])
+        self.assertEqual(expected_prefetches[4][0:3], prefetches[4][0:3])
+        self.assertIsAPgUnitsLookupDict(prefetches[4][3])
 
         # Should be called after tearDown()
         # self.restore_split_rows()
@@ -664,7 +759,8 @@ class FormatsTests(TracebaseTestCase):
         cmp = "iexact"
         val = tval
         fmt = "pgtemplate"
-        newqry = basv_metadata.createNewBasicQuery(mdl, fld, cmp, val, fmt)
+        units = "identity"
+        newqry = basv_metadata.createNewBasicQuery(mdl, fld, cmp, val, units, fmt)
         self.maxDiff = None
         self.assertEqual(qry, newqry)
 
@@ -706,7 +802,7 @@ class FormatsTests(TracebaseTestCase):
                                 "ncmp": "iexact",
                                 "static": "",
                                 "val": "Brain",
-                                "units": "",
+                                "units": "identity",
                             }
                         ],
                     },
@@ -726,7 +822,7 @@ class FormatsTests(TracebaseTestCase):
                                 "static": "",
                                 "fld": "labeled_element",
                                 "val": "",
-                                "units": "",
+                                "units": "identity",
                             }
                         ],
                     },
@@ -746,7 +842,7 @@ class FormatsTests(TracebaseTestCase):
                                 "ncmp": "iexact",
                                 "static": "",
                                 "val": "",
-                                "units": "",
+                                "units": "identity",
                             }
                         ],
                     },
@@ -1249,6 +1345,105 @@ class FormatsTests(TracebaseTestCase):
         # so that the number of FCirc records is equal to the number of queryset records when splitting on
         # InfusateTracer records.  This affects only the result count displayed on the page.
         self.assertEqual(FCirc.objects.count(), qs.count())
+
+    def test_getFieldUnitsDict(self):
+        """
+        Spot check a few dicts
+        """
+        sg = SearchGroup()
+        fld_units_dict = sg.getFieldUnitsDict()
+        self.assertEqual(3, len(fld_units_dict.keys()))
+        expected_element_dict = {
+            "choices": (("identity", "identity"),),
+            "default": "identity",
+            "metadata": {
+                "identity": {
+                    "about": None,
+                    "example": None,
+                },
+            },
+            "units": "identity",
+        }
+        self.assertEqual(expected_element_dict, fld_units_dict["fctemplate"]["element"])
+        expected_age_dict = {
+            "choices": (
+                ("native", "n.n{units},..."),
+                ("calendartime", "ny,nm,nw,nd"),
+                ("months", "months"),
+                ("weeks", "weeks"),
+                ("days", "days"),
+                ("hours", "hours"),
+            ),
+            "default": "weeks",
+            "metadata": {
+                "calendartime": {
+                    "about": None,
+                    "example": "0y,1m,2w,3d",
+                },
+                "days": {
+                    "about": None,
+                    "example": "1.0",
+                },
+                "hours": {
+                    "about": None,
+                    "example": "1.0",
+                },
+                "months": {
+                    "about": None,
+                    "example": "1.0",
+                },
+                "native": {
+                    "about": (
+                        "Values can be entered using the following format pattern: `[n{units}{:|,}]*hh:mm:ss[.f]`, "
+                        "where units can be:\n\n- c[enturies]\n- decades\n- y[ears]\n- months\n- w[eeks]\n- d[ays]\n- "
+                        "h[ours]\n- m[inutes]\n- s[econds]\n- milliseconds\n- microseconds\n\nIf milli/micro-seconds "
+                        "are not included, the last 3 units (hours, minutes, and seconds) do not need to be specified."
+                        "\n\nExamples:\n\n- 1w,1d,1:01:01.1\n- 1 year, 3 months\n- 2:30\n- 2 days, 11:29:59.999"
+                    ),
+                    "example": "1w,1d,1:01:01.1",
+                },
+                "weeks": {
+                    "about": None,
+                    "example": "1.0",
+                },
+            },
+            "units": "postgres_interval",
+        }
+        self.assertEqual(
+            expected_age_dict, fld_units_dict["fctemplate"]["serum_sample__animal__age"]
+        )
+        self.assertEqual(31, len(fld_units_dict["fctemplate"].keys()))
+        self.assertEqual(39, len(fld_units_dict["pgtemplate"].keys()))
+        self.assertEqual(43, len(fld_units_dict["pdtemplate"].keys()))
+
+    def test_getAllFieldUnitsChoices(self):
+        sg = SearchGroup()
+        fld_units_choices = sg.getAllFieldUnitsChoices()
+        expected = (
+            ("identity", "identity"),
+            ("native", "n.n{units},..."),
+            ("calendartime", "ny,nm,nw,nd"),
+            ("clocktime", "clocktime (hh:mm[:ss])"),
+            ("millennia", "millennia"),
+            ("centuries", "centuries"),
+            ("decades", "decades"),
+            ("years", "years"),
+            ("months", "months"),
+            ("weeks", "weeks"),
+            ("days", "days"),
+            ("hours", "hours"),
+            ("minutes", "minutes"),
+            ("seconds", "seconds"),
+            ("milliseconds", "milliseconds"),
+            ("microseconds", "microseconds"),
+        )
+        self.assertEqual(expected, fld_units_choices)
+
+    def test_getFieldUnitsLookup(self):
+        format = "fctemplate"
+        sg = SearchGroup()
+        fld_units_lookup = sg.getFieldUnitsLookup(format)
+        self.assertIsAFcUnitsLookupDict(fld_units_lookup)
 
 
 @tag("search_choices")

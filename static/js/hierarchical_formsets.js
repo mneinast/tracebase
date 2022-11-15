@@ -229,6 +229,8 @@ function addSearchFieldForm (myDiv, query, templateId) {
   if (fldInitVal === '') {
     fldInitVal = fldClone[0].value
     ncmpInitVal = ncmpClone[0].value
+    // fldUnits contains a default for each template/field combo
+    unitsInitVal = fldUnits[templateId][fldInitVal].default
   }
 
   if (unitsInitVal === '') {

@@ -75,15 +75,17 @@ class Format:
         ],
     }
     unit_options = {
-        # The following dicts are used to populate a units (or "format") select list (for fields of type "number" only)
-        # To use, set the field units in the derived class, e.g.:
+        # The following dicts are used to populate a units select list (for fields of type "number" only).
+        # To use, set the field units in the model_instances attribute of derived class like this:
         #
-        # self.model_instances[instance_name]["fields"][field_name]["units"] = {
-        #     "type": "postgres_interval",
-        #     "default": "weeks",
-        #     "subset": ["months", "weeks", "days", "hours"],  # Order retained
-        # }
-        # This is used for any/all fields that do not have unit options
+        #     self.model_instances[instance_name]["fields"][field_name]["units"] = {
+        #         "type": "postgres_interval",  # This is the key below
+        #         "default": "weeks",  # This is the next key 1 level deeper that is to be the default units
+        #         "subset": ["months", "weeks", "days", "hours"],  # A subset of keys to include in the select list
+        #     }
+        #
+        # The values above are selected from what's below.  Note, the order of the subset is how the select list will
+        # be populated.
         "identity": {
             "default": "identity",
             "entry_options": {
@@ -95,6 +97,7 @@ class Format:
                 },
             },
         },
+        # TODO: Enforce that "identity" always exists as a key in entry_options, because it's hard-coded in places
         "postgres_interval": {
             "default": "native",  # Override: model_instances[instance_name]["fields"][field_name]["units"]["default"]
             # The following has only been tested to work with DurationField lookups and a postgres database
@@ -536,7 +539,7 @@ class Format:
                 unique_paths.append(path)
         return unique_paths
 
-    def getTrueJoinPrefetchPathsAndQrys(self, qry, units_lookup=None):
+    def getTrueJoinPrefetchPathsAndQrys(self, qry):
         """
         Takes a qry object and a units lookup dict (that maps the path version of fld [e.g. msrun__sample__animal__age]
         to a dict that contains the units options, including most importantly, a convert function that is found via the
@@ -560,6 +563,8 @@ class Format:
         # compounds.  This migth be a false assumption.
         fld_paths = sorted(extractFldPaths(qry), key=len)
 
+        new_units_lookup = deepcopy(self.getFieldUnitsLookup())
+
         # Identify the fld paths that need a subquery in its prefetch and collect those paths associated with their
         # rerooted qry objects
         subquery_paths = []
@@ -571,11 +576,6 @@ class Format:
                     "split_rows"
                 ]
             ):
-                if units_lookup:
-                    new_units_lookup = deepcopy(units_lookup)
-                else:
-                    new_units_lookup = None
-
                 new_qry = self.reRootQry(qry, srch_model_inst_name, new_units_lookup)
                 subquery_paths.append(
                     [

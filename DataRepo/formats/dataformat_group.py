@@ -193,7 +193,7 @@ class FormatGroup:
         """
         return self.modeldata[format].getPrefetches()
 
-    def getTrueJoinPrefetchPathsAndQrys(self, qry, format=None, units_lookup=None):
+    def getTrueJoinPrefetchPathsAndQrys(self, qry, format=None):
         """
         Calls getTrueJoinPrefetchPathsAndQrys of the supplied ID of the search output format class.
         """
@@ -204,7 +204,7 @@ class FormatGroup:
             )
         elif format is None:
             format = selfmt
-        return self.modeldata[format].getTrueJoinPrefetchPathsAndQrys(qry, units_lookup)
+        return self.modeldata[format].getTrueJoinPrefetchPathsAndQrys(qry)
 
     def getSearchFieldChoices(self, format):
         """
@@ -567,7 +567,7 @@ class FormatGroup:
             prefetches = self.getPrefetches(fmt)
         else:
             # Retrieve the prefetch data
-            prefetch_qrys = self.getTrueJoinPrefetchPathsAndQrys(qry, fmt, units_lookup)
+            prefetch_qrys = self.getTrueJoinPrefetchPathsAndQrys(qry, fmt)
 
             # Build the prefetches, including subqueries for M:M related tables to produce a "true join" if a search
             # term is from a M:M related model
@@ -601,8 +601,6 @@ class FormatGroup:
         split_row_annotations = self.getFullJoinAnnotations(fmt)
         for annotation in split_row_annotations:
             results = results.annotate(**annotation)
-
-        print(f"QUERY: {results.query}")
 
         return results, cnt, stats
 
@@ -735,13 +733,10 @@ class FormatGroup:
             )
         return qry_list
 
-    def createNewBasicQuery(self, mdl, fld, cmp, val, fmt):
+    def createNewBasicQuery(self, mdl, fld, cmp, val, units, fmt):
         """
         Constructs a new qry object for an advanced search from basic search input.
         """
-
-        # NOTE: This does not yet support units.  "identity" is the default.
-        units = "identity"
 
         qry = self.getRootGroup(fmt)
 
