@@ -33,7 +33,6 @@ from DataRepo.tests.tracebase_test_case import (
 from DataRepo.views import DataValidationView
 
 
-@tag("multi_working")
 class ViewTests(TracebaseTestCase):
     @classmethod
     def setUpTestData(cls):
@@ -358,12 +357,15 @@ class ViewTests(TracebaseTestCase):
             "form-0-fld": "msrun__sample__tissue__name",
             "form-0-ncmp": "iexact",
             "form-0-val": "Brain",
+            "form-0-units": "identity",
             "form-1-pos": "pdtemplate-PeakData.0-all-False.0",
             "form-1-fld": "labels__element",
             "form-1-ncmp": "iexact",
+            "form-1-units": "identity",
             "form-2-pos": "fctemplate-FCirc.0-all-False.0",
             "form-2-fld": "msrun__sample__animal__name",
             "form-2-ncmp": "iexact",
+            "form-2-units": "identity",
         }
         qry = self.get_advanced_qry()
         dlform = {
@@ -394,6 +396,7 @@ class ViewTests(TracebaseTestCase):
                                 "ncmp": "iexact",
                                 "static": "",
                                 "val": "Brain",
+                                "units": "identity",
                             }
                         ],
                     },
@@ -413,6 +416,7 @@ class ViewTests(TracebaseTestCase):
                                 "static": "",
                                 "fld": "labels__element",
                                 "val": "",
+                                "units": "identity",
                             }
                         ],
                     },
@@ -432,6 +436,7 @@ class ViewTests(TracebaseTestCase):
                                 "ncmp": "iexact",
                                 "static": "",
                                 "val": "",
+                                "units": "identity",
                             }
                         ],
                     },
@@ -504,7 +509,6 @@ class ViewTests(TracebaseTestCase):
         self.assertEqual(results["data_submission_accucor2.xlsx"], "PASSED")
 
 
-@tag("multi_working")
 class ViewNullToleranceTests(ViewTests):
     """
     This class inherits from the ViewTests class above and overrides the setUpTestData method to load without auto-
@@ -530,8 +534,6 @@ class ViewNullToleranceTests(ViewTests):
         super().test_study_detail()
 
 
-@tag("multi_working")
-@tag("protocol_loading_broken")
 class ValidationViewTests(TracebaseTransactionTestCase):
     """
     Note, without the TransactionTestCase (derived) class (and the with transaction.atomic block below), the infusate-
