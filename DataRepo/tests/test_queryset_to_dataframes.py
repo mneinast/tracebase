@@ -7,6 +7,10 @@ from django.utils import dateparse
 from DataRepo.models import Animal, Infusate, Tracer, TracerLabel
 from DataRepo.tests.tracebase_test_case import TracebaseTestCase
 from DataRepo.utils import QuerysetToPandasDataFrame as qs2df
+from DataRepo.models.maintained_model import (
+    disable_buffering,
+    enable_buffering,
+)
 
 
 class QuerysetToPandasDataFrameBaseTests(TracebaseTestCase):
@@ -133,13 +137,16 @@ class QuerysetToPandasDataFrameBaseTests(TracebaseTestCase):
 
         self.assertEqual(stud1_list_stats_dict, stud1_dict)
 
-    def test_animal_list_stat_df(self):
+    def test_animal_list_stat_df(self, example_animal_dict=None):
         """
         get data from the DataFrame for a selected animal with selected columns,
         then convert the data to dictionary to compare with expected data.
         test studies as an unordered list
         """
-        anim1_dict = self.animal1_dict
+        if example_animal_dict is None:
+            anim1_dict = self.animal1_dict
+        else:
+            anim1_dict = example_animal_dict
         anim1_name = anim1_dict["animal"]
 
         anim_list_stats_df = qs2df.get_animal_list_stats_df()
@@ -150,17 +157,26 @@ class QuerysetToPandasDataFrameBaseTests(TracebaseTestCase):
         selected_columns = list(anim1_dict.keys())
         out_df = anim1_list_stats_df[selected_columns]
         anim1_list_stats_dict = qs2df.df_to_list_of_dict(out_df)[0]
-        self.assertEqual(anim1_list_stats_dict, anim1_dict)
+        anim1_expected_dict = {}
+        for k, v in anim1_dict.items():
+            anim1_expected_dict[k] = v or "None"
+        self.assertEqual(anim1_list_stats_dict, anim1_expected_dict)
 
-    def test_animal_sample_msrun_df(self):
+    def test_animal_sample_msrun_df(self, example_sample1_dict=None, example_sample2_dict=None):
         """
         get data from the DataFrame for selected samples with selected columns,
         then convert the data to dictionary to compare with expected data.
         test studies as an unordered list
         """
         # get data for examples
-        sam1_dict = self.sample1_dict
-        sam2_dict = self.sample2_dict
+        if example_sample1_dict is None:
+            sam1_dict = self.sample1_dict
+        else:
+            sam1_dict = example_sample1_dict
+        if example_sample2_dict is None:
+            sam2_dict = self.sample2_dict
+        else:
+            sam2_dict = example_sample2_dict
         sam1_name = sam1_dict["sample"]
         sam2_name = sam2_dict["sample"]
         anim_msrun_df = qs2df.get_animal_msrun_all_df()
@@ -170,7 +186,12 @@ class QuerysetToPandasDataFrameBaseTests(TracebaseTestCase):
         sam1_columns = list(sam1_dict.keys())
         out_df = sam1_msrun_df[sam1_columns]
         sam1_msrun_dict = qs2df.df_to_list_of_dict(out_df)[0]
-        self.assertEqual(sam1_msrun_dict, sam1_dict)
+        sam1_expected_dict = {}
+        for k, v in sam1_dict.items():
+            if v == [None]:
+                v = ["None"]
+            sam1_expected_dict[k] = v or "None"
+        self.assertEqual(sam1_msrun_dict, sam1_expected_dict)
 
         # test for sample 2
         sam2_msrun_df = anim_msrun_df[anim_msrun_df["sample"] == sam2_name]
@@ -322,6 +343,7 @@ class QuerysetToPandasDataFrameBaseTests(TracebaseTestCase):
 
         # infusate1
         inf1_name = self.infusate1_dict["infusate_name"]
+        print(f"Searching for infusate name: [{inf1_name}]")
         inf1_id = Infusate.objects.get(name=inf1_name).id
         tracer_name = self.infusate1_dict["tracers"][0]
         tracer_id = Tracer.objects.get(name=tracer_name).id
@@ -372,3 +394,69 @@ class QuerysetToPandasDataFrameBaseTests(TracebaseTestCase):
         out_list = sorted(stud2_list_stats_df.iloc[0]["infusate_id_name_list"])
         exp_list = sorted(exp_infusate_id_name_list)
         self.assertEqual(out_list, exp_list)
+
+class QuerysetToPandasDataFrameNullToleranceTests(QuerysetToPandasDataFrameBaseTests):
+    @classmethod
+    def setUpTestData(cls):
+        # Silently dis-allow auto-updates by disabling buffering
+        disable_buffering()
+        try:
+            super().setUpTestData()
+        except Exception as e:
+            raise e
+        finally:
+            enable_buffering()
+
+    def test_study_list_stat_df(self):
+        super().test_study_list_stat_df()
+
+    def test_animal_list_stat_df(self):
+        example_animal_dict = {
+            "animal": "a1_Lys_13C",
+            "infusate_name": None,
+            "infusion_rate": 0.11,
+            "genotype": "WT",
+            "body_weight": 26.2,
+            "sex": "M",
+            "diet": "Diet 1",
+            "feeding_status": "fasted",
+            "treatment": "no treatment",
+            "treatment_category": "animal_treatment",
+            "total_tissue": 3,
+            "total_sample": 3,
+            "total_msrun": 3,
+            "sample_owners": ["Xianfeng Zeng"],
+            "studies": ["Study Test1", "Study Test2"],
+        }
+        super().test_animal_list_stat_df(example_animal_dict=example_animal_dict)
+
+    def test_animal_sample_msrun_df(self):
+        example_sample1_dict = {
+            "animal": "a1_Lys_13C",
+            "infusate_name": None,
+            "tracer_group_name": None,
+            "tracers": [None],
+            "labeled_elements": ['C'],
+            "concentrations": [15],
+            "tissue": "kidney",
+            "sample": "a1_kd",
+            "sample_owner": "Xianfeng Zeng",
+            "msrun_owner": "Xianfeng Zeng",
+            "msrun_protocol": "Default",
+            "studies": ["Study Test1", "Study Test2"],
+        }
+        example_sample2_dict = {
+            "animal": "a2_VLI_13C15N",
+            "infusate_name": None,
+            "tissue": "liver",
+            "sample": "a2_liv",
+            "sample_owner": "Xianfeng Zeng",
+        }
+        super().test_animal_sample_msrun_df(
+            example_sample1_dict=example_sample1_dict,
+            example_sample2_dict=example_sample2_dict,
+        )
+
+    def test_infusate_list_df(self):
+        with self.assertRaises(IndexError):
+            super().test_infusate_list_df()
